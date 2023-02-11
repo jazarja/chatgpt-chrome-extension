@@ -1,8 +1,9 @@
 // Listen for messages from the background script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "ASK_CHATGPT") {
     let originalActiveElement;
     let text;
+    let fromSelection = false;
 
     // If there's an active text input
     if (
@@ -19,6 +20,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         document.activeElement.textContent.trim();
     } else {
       // If no active text input use any selected text on page
+      fromSelection = true;
       text = document.getSelection().toString().trim();
     }
 
@@ -29,6 +31,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return;
     }
 
+    let query = fromSelection ? prompt("Please enter your ChatGPT query", "") : null;
+
     showLoadingCursor();
 
     // Send the text to the API endpoint
@@ -37,7 +41,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: (query ? query+" " : "") + text }),
     })
       .then((response) => response.json())
       .then(async (data) => {
